@@ -4,14 +4,29 @@ import { createRouter, createWebHistory, Router, RouterHistory, RouteRecordRaw, 
 import { appName } from '@/config.json'
 
 import Home from '@/pages/Home.vue'
+import Login from '@/pages/Login.vue'
+import URI from '@/pages/URI.vue'
 
 const routes: Array<RouteRecordRaw> = [
 	{
 		path: '/',
 		name: 'Home',
-		component: Home,
+		component: Home
+	},
+	{
+		path: '/uri',
+		name: 'URI',
+		component: URI,
 		meta: {
-			title: 'Welcome'
+			title: 'URI'
+		}
+	},
+	{
+		path: '/login',
+		name: 'Login',
+		component: Login,
+		meta: {
+			title: 'Login'
 		}
 	}
 ]
@@ -22,7 +37,7 @@ const router: Router = createRouter({ routes, history })
 
 router.afterEach((to, from, failure) => {
 	if (isNavigationFailure(failure)) {
-		console.error('Failed Navigation!')
+		console.error('Router', failure)
 	}
 
 	nextTick(() => {
