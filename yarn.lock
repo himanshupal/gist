@@ -743,11 +743,6 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
-lzwcompress@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/lzwcompress/-/lzwcompress-1.1.0.tgz#e4dd0826dfd1e53fe1335163570e361634f39ca2"
-  integrity sha512-92sbAKG+fkTWPQ7cImKjD3p4elxyIc0+uWgXNLwk9OwzwCX7j6KXl/CJ0zpVsFPRyjuOFUcDuhGWRUAMjGMY7g==
-
 magic-string@^0.25.7:
   version "0.25.7"
   resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.25.7.tgz#3f497d6fd34c669c6798dcb821f2ef31f5445051"
@@ -796,6 +791,11 @@ nanoid@^3.1.23:
   version "3.1.23"
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.23.tgz#f744086ce7c2bc47ee0a8472574d5c78e4183a81"
   integrity sha512-FiB0kzdP0FFVGDKlRLEQ1BgDzU87dy5NnzjeW9YZNt+/c3+q82EQDUwniSAUxp/F0gFNI1ZhKU1FqYsMuqZVnw==
+
+nanoid@^3.1.28:
+  version "3.1.28"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.28.tgz#3c01bac14cb6c5680569014cc65a2f26424c6bd4"
+  integrity sha512-gSu9VZ2HtmoKYe/lmyPFES5nknFrHa+/DT9muUFWFMi6Jh9E1I7bkvlQ8xxf1Kos9pi9o8lBnIOkatMhKX/YUw==
 
 node-emoji@^1.8.1:
   version "1.11.0"

@@ -6,6 +6,7 @@ import { appName } from '@/config.json'
 import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
 import URI from '@/pages/URI.vue'
+import URIList from '@/pages/URIList.vue'
 
 const routes: Array<RouteRecordRaw> = [
 	{
@@ -19,6 +20,14 @@ const routes: Array<RouteRecordRaw> = [
 		component: URI,
 		meta: {
 			title: 'URI'
+		}
+	},
+	{
+		path: '/uri/all',
+		name: 'URIList',
+		component: URIList,
+		meta: {
+			title: 'All URI based Note'
 		}
 	},
 	{
@@ -37,7 +46,7 @@ const router: Router = createRouter({ routes, history })
 
 router.afterEach((to, from, failure) => {
 	if (isNavigationFailure(failure)) {
-		console.error('Router', failure)
+		console.warn('Router', failure)
 	}
 
 	nextTick(() => {

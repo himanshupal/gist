@@ -1,1 +1,1 @@
-{ "appName": "Gist" }
+{ "appName": "Gist", "URI_STORAGE_KEY": "uri-gists", "notifyDuration": 1500 }

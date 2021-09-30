@@ -9,6 +9,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
+import { URI_STORAGE_KEY } from '@/config.json'
 import Button from '@/components/Button.vue'
 
 export default defineComponent({
@@ -19,11 +20,13 @@ export default defineComponent({
 	},
 
 	setup() {
+		const listInLS = localStorage.getItem(URI_STORAGE_KEY)
+
 		const options = ref<Array<Record<string, string>>>([
 			{
 				text: 'Temporary',
 				sub: 'URI based',
-				to: '/uri'
+				to: listInLS ? '/uri/all' : '/uri'
 			},
 			{
 				text: 'Persisting',
