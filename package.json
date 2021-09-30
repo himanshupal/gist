@@ -1,6 +1,17 @@
 {
+	"name": "gist",
+	"displayName": "Gist by Himanshu Pal",
 	"version": "0.1.0",
 	"license": "GPL-3.0-or-later",
+	"author": {
+		"name": "Himanshu Pal",
+		"email": "mailtohimanshupal@gmail.com",
+		"url": "https://himanshupal.xyz"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git@github.com:himanshupal/gist.git"
+	},
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
