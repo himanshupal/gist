@@ -1,5 +1,5 @@
 <template>
-	<form @submit.prevent="share" class="h-screen p-5 sm:p-10 flex flex-col bg-gray-200 dark:bg-black">
+	<form @submit.prevent="share" class="min-h-screen p-5 sm:p-10 flex flex-col bg-gray-200 dark:bg-black">
 		<div @click="goBack" class="text-xs cursor-pointer text-white">// Go Back</div>
 
 		<div class="flex flex-col items-end">
@@ -18,7 +18,7 @@
 					Save
 					<div style="font-size: 0.55rem">(Ctrl+S)</div>
 				</Button>
-				<Button type="submit" @click="share">Share</Button>
+				<Button type="submit">Share</Button>
 			</div>
 			<Button type="button" @click="hide" v-if="!!notification">{{ notification }}</Button>
 			<Button type="button" @click="clear">Clear</Button>

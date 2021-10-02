@@ -5,14 +5,19 @@ import { appName } from '@/config.json'
 
 import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
+import Register from '@/pages/Register.vue'
 import URI from '@/pages/URI.vue'
 import URIList from '@/pages/URIList.vue'
+import Dashboard from '@/pages/Dashboard.vue'
 
 const routes: Array<RouteRecordRaw> = [
 	{
 		path: '/',
 		name: 'Home',
-		component: Home
+		component: Home,
+		meta: {
+			title: 'Anytime Notes'
+		}
 	},
 	{
 		path: '/uri',
@@ -36,6 +41,22 @@ const routes: Array<RouteRecordRaw> = [
 		component: Login,
 		meta: {
 			title: 'Login'
+		}
+	},
+	{
+		path: '/register',
+		name: 'Register',
+		component: Register,
+		meta: {
+			title: 'New Account'
+		}
+	},
+	{
+		path: '/app',
+		name: 'Dashboard',
+		component: Dashboard,
+		meta: {
+			title: 'Dashboard'
 		}
 	}
 ]

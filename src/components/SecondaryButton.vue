@@ -10,7 +10,7 @@ import { defineComponent } from 'vue'
 type ButtonSize = 'sm' | 'md' | 'lg'
 
 export default defineComponent({
-	name: 'SecondaryButtonComponent',
+	name: 'SecondaryButton',
 
 	props: {
 		size: {

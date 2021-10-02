@@ -1,5 +1,5 @@
 <template>
-	<div class="h-screen grid gap-4 place-content-center text-center bg-gray-200 dark:bg-black">
+	<div class="min-h-screen p-5 sm:p-10 grid gap-4 place-content-center text-center bg-gray-200 dark:bg-black">
 		<Button as="router-link" v-for="(option, k) in options" :key="k" :to="option.to">
 			{{ option.text }}
 			<div class="text-xs">({{ option.sub }})</div>
