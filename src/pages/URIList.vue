@@ -26,7 +26,7 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { URIGist, URIGistList } from '@/models/URI'
+import { URIGist, URIGistList } from '@/models'
 import { URI_STORAGE_KEY, notifyDuration } from '@/config.json'
 import Button from '@/components/Button.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'

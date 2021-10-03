@@ -38,6 +38,8 @@
 			<div v-if="!!registrationErrors.confirmationPassword" class="text-xs text-red-500">{{ registrationErrors.confirmationPassword }}</div>
 		</fieldset>
 
+		<hr />
+
 		<Button type="submit" class="items-center">Register</Button>
 		<router-link to="/login" replace class="text-xs dark:text-white text-center">Already have an account? Login here.</router-link>
 	</form>
@@ -45,7 +47,7 @@
 
 <script lang="ts">
 import { defineComponent, reactive } from 'vue'
-import { RegistrationDetails, RegistrationErrors } from '@/models/Register'
+import { RegistrationDetails, RegistrationErrors } from '@/models'
 import Button from '@/components/Button.vue'
 
 export default defineComponent({

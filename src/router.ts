@@ -8,7 +8,7 @@ import Login from '@/pages/Login.vue'
 import Register from '@/pages/Register.vue'
 import URI from '@/pages/URI.vue'
 import URIList from '@/pages/URIList.vue'
-import Dashboard from '@/pages/Dashboard.vue'
+import Notes from '@/pages/Notes.vue'
 
 const routes: Array<RouteRecordRaw> = [
 	{
@@ -53,10 +53,10 @@ const routes: Array<RouteRecordRaw> = [
 	},
 	{
 		path: '/app',
-		name: 'Dashboard',
-		component: Dashboard,
+		name: 'Notes',
+		component: Notes,
 		meta: {
-			title: 'Dashboard'
+			title: 'All'
 		}
 	}
 ]

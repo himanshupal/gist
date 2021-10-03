@@ -20,14 +20,16 @@
 			<div v-if="!!loginErrors.password" class="text-xs text-red-500">{{ loginErrors.password }}</div>
 		</fieldset>
 
+		<hr />
+
 		<Button type="submit" class="items-center">Login</Button>
 		<router-link to="/register" replace class="text-xs dark:text-white text-center">Don&apos;t have an account? Register here.</router-link>
 	</form>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, ref } from 'vue'
-import { LoginDetails, LoginErrors } from '@/models/Login'
+import { defineComponent, reactive } from 'vue'
+import { LoginDetails, LoginErrors } from '@/models'
 import Button from '@/components/Button.vue'
 
 export default defineComponent({

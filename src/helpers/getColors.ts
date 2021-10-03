@@ -1,4 +1,4 @@
-import { ColorRange } from '@/models/Colors'
+import { ColorRange } from '@/models'
 
 const getLuminance = (numericColors: Array<number>) => {
 	const [r, g, b] = numericColors.map((value) => {
