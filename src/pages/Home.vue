@@ -25,12 +25,12 @@ export default defineComponent({
 		const options = ref<Array<Record<string, string>>>([
 			{
 				text: 'Temporary',
-				sub: 'URI based',
+				sub: 'Uses browser storage',
 				to: listInLS ? '/uri/all' : '/uri'
 			},
 			{
 				text: 'Persisting',
-				sub: 'Requires login',
+				sub: 'Uses server storage',
 				to: '/login'
 			}
 		])
