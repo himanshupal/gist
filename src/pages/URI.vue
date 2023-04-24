@@ -30,6 +30,7 @@
 import { defineComponent, onBeforeMount, onMounted, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { LocationQueryRaw, useRoute, useRouter } from 'vue-router'
 import { nanoid } from 'nanoid'
+import { compress, decompress } from 'lz-string'
 import { URIGist, URIGistList } from '@/models/URI'
 import { URI_STORAGE_KEY, notifyDuration } from '@/config.json'
 import Button from '@/components/Button.vue'
@@ -65,14 +66,13 @@ export default defineComponent({
 		})
 
 		onMounted(() => {
-			if (route.query.id) {
-				gist.id = decodeURI(String(route.query.id))
-			}
+			gist.id = route.query.id ? decodeURI(String(route.query.id)) : nanoid()
+
 			if (route.query.title) {
 				gist.title = decodeURI(String(route.query.title))
 			}
 			if (route.query.text) {
-				gist.text = decodeURI(String(route.query.text))
+				gist.text = decompress(String(route.query.text))
 			}
 		})
 
@@ -86,7 +86,7 @@ export default defineComponent({
 				let query: LocationQueryRaw = { id: encodeURIComponent(value.id) }
 
 				if (value.title) query = { ...query, title: encodeURIComponent(value.title) }
-				if (value.text) query = { ...query, text: encodeURIComponent(value.text) }
+				if (value.text) query = { ...query, text: compress(value.text) }
 
 				router.replace({ query })
 			},

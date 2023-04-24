@@ -40,7 +40,7 @@
 
 		<hr />
 
-		<Button type="submit" class="items-center">Register</Button>
+		<Button type="submit" class="items-center" :disabled="!isDevelopment">Register <span class="text-sm" v-if="!isDevelopment">(Not available currently)</span></Button>
 		<router-link to="/login" replace class="text-xs dark:text-white text-center">Already have an account? Login here.</router-link>
 	</form>
 </template>
@@ -60,6 +60,8 @@ export default defineComponent({
 	setup() {
 		const registrationDetails = reactive<RegistrationDetails>({ name: '', email: '', username: '', password: '', confirmationPassword: '' })
 		const registrationErrors = reactive<RegistrationErrors>({ name: '', email: '', username: '', password: '', confirmationPassword: '' })
+
+		const isDevelopment = import.meta.env.DEV
 
 		const register = () => {
 			if (!registrationDetails.name) registrationErrors.name = "Name can't be empty!"
@@ -93,6 +95,7 @@ export default defineComponent({
 		return {
 			registrationDetails,
 			registrationErrors,
+			isDevelopment,
 
 			register
 		}
