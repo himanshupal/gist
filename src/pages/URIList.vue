@@ -26,6 +26,7 @@
 <script lang="ts">
 import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { compress } from 'lz-string'
 import { URIGist, URIGistList } from '@/models'
 import { URI_STORAGE_KEY, notifyDuration } from '@/config.json'
 import Button from '@/components/Button.vue'
@@ -86,7 +87,7 @@ export default defineComponent({
 		const edit = async (key: string) => {
 			const gist: URIGist = gists.value.find((gist) => gist.id === key) as URIGist
 
-			await router.push(`/uri?id=${encodeURIComponent(gist.id)}&title=${encodeURIComponent(gist.title)}&text=${encodeURIComponent(gist.text)}`)
+			await router.push(`/uri?id=${encodeURIComponent(gist.id)}&title=${encodeURIComponent(gist.title)}&text=${compress(gist.text)}`)
 		}
 
 		const remove = (key: string) => {
