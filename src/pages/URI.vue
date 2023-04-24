@@ -66,9 +66,8 @@ export default defineComponent({
 		})
 
 		onMounted(() => {
-			if (route.query.id) {
-				gist.id = decodeURI(String(route.query.id))
-			}
+			gist.id = route.query.id ? decodeURI(String(route.query.id)) : nanoid()
+
 			if (route.query.title) {
 				gist.title = decodeURI(String(route.query.title))
 			}

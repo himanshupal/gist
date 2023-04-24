@@ -74,10 +74,10 @@ export default defineComponent({
 				await navigator.share({
 					title: gist.title,
 					text: gist.text,
-					url: window.location.href
+					url: `${window.location.origin}/uri?id=${encodeURIComponent(gist.id)}&title=${encodeURIComponent(gist.title)}&text=${compress(gist.text)}`
 				})
 			} else {
-				await navigator.clipboard.writeText(window.location.href)
+				await navigator.clipboard.writeText(`${window.location.origin}/uri?id=${encodeURIComponent(gist.id)}&title=${encodeURIComponent(gist.title)}&text=${compress(gist.text)}`)
 				shareText.value = 'Copied!'
 
 				setTimeout(() => (shareText.value = 'Share'), notifyDuration)
