@@ -22,7 +22,7 @@
 
 		<hr />
 
-		<Button type="submit" class="items-center">Login</Button>
+		<Button type="submit" class="items-center" :disabled="!isDevelopment">Login <span class="text-sm" v-if="!isDevelopment">(Not available currently)</span></Button>
 		<router-link to="/register" replace class="text-xs dark:text-white text-center">Don&apos;t have an account? Register here.</router-link>
 	</form>
 </template>
@@ -43,6 +43,8 @@ export default defineComponent({
 		const loginDetails = reactive<LoginDetails>({ username: '', password: '' })
 		const loginErrors = reactive<LoginErrors>({ username: '', password: '' })
 
+		const isDevelopment = import.meta.env.DEV
+
 		const login = () => {
 			if (!loginDetails.username) loginErrors.username = "Username can't be empty!"
 			else loginErrors.username = ''
@@ -56,6 +58,7 @@ export default defineComponent({
 		}
 
 		return {
+			isDevelopment,
 			loginDetails,
 			loginErrors,
 
