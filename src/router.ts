@@ -1,7 +1,7 @@
 import { nextTick } from '@vue/runtime-core'
 import { createRouter, createWebHistory, Router, RouterHistory, RouteRecordRaw, isNavigationFailure } from 'vue-router'
 
-import { appName } from '@/config'
+import { LOGIN_STATUS_KEY, appName } from '@/config'
 
 import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
@@ -64,6 +64,20 @@ const routes: Array<RouteRecordRaw> = [
 const history: RouterHistory = createWebHistory()
 
 const router: Router = createRouter({ routes, history })
+
+router.beforeEach((to, from, next) => {
+	const isLoggedIn = localStorage.getItem(LOGIN_STATUS_KEY)
+
+	if (to.path === '/notes' && !isLoggedIn) {
+		return next('/login')
+	}
+
+	if (to.path === '/login' && isLoggedIn) {
+		return next('/notes')
+	}
+
+	next()
+})
 
 router.afterEach((to, from, failure) => {
 	if (isNavigationFailure(failure)) {

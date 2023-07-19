@@ -53,7 +53,7 @@
 </template>
 
 <script lang="ts">
-import { createUserWithEmailAndPassword, AuthError } from 'firebase/auth'
+import { createUserWithEmailAndPassword, AuthError, updateProfile } from 'firebase/auth'
 import { RegistrationDetails, RegistrationErrors } from '@/models'
 import { defineComponent, reactive, ref as useRef } from 'vue'
 import { get, set, ref } from 'firebase/database'
@@ -80,6 +80,7 @@ export default defineComponent({
 			if (!registrationDetails.username) return
 			const data = await get(ref(firebase.database, '/users/'))
 			if (data.hasChild(registrationDetails.username)) registrationErrors.username = 'Username already taken'
+			else registrationErrors.username = ''
 		}
 
 		const register = async () => {
@@ -114,12 +115,20 @@ export default defineComponent({
 			if (!Object.values(registrationErrors).filter((e) => e.length).length) {
 				try {
 					registrationLoading.value = true
-					await createUserWithEmailAndPassword(firebase.auth, registrationDetails.email, registrationDetails.password)
-					await set(ref(firebase.database, '/users/'), {
-						[registrationDetails.username]: {
-							email: registrationDetails.email
-						}
-					})
+					const userCredentials = await createUserWithEmailAndPassword(firebase.auth, registrationDetails.email, registrationDetails.password)
+					await Promise.all([
+						updateProfile(userCredentials.user, {
+							displayName: registrationDetails.name
+						}),
+						set(ref(firebase.database, '/users/'), {
+							[userCredentials.user.uid]: {
+								username: registrationDetails.username
+							},
+							[registrationDetails.username]: {
+								email: registrationDetails.email
+							}
+						})
+					])
 					registrationSuccessful.value = true
 				} catch (err) {
 					const error = err as AuthError

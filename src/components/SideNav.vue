@@ -5,14 +5,14 @@
 
 		<div class="text-xl pt-3 pb-1 font-semibold">Filter by Tags</div>
 		<div class="flex flex-col gap-1.5">
-			<div v-if="filteredTags.length" class="flex flex-wrap gap-1.5 p-1 border border-black dark:border-white">
-				<button @click="removeTagFromFilters(tag)" v-for="(tag, k) in filteredTags" :key="k" :title="`Remove ${tag.name} from filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">
+			<div v-if="filteredTags?.length" class="flex flex-wrap gap-1.5 p-1 border border-black dark:border-white">
+				<button @click="removeTagFromFilters?.(tag)" v-for="(tag, k) in filteredTags" :key="k" :title="`Remove ${tag.name} from filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">
 					{{ tag.name }}
 					<CloseIcon :color="tag.textColor" :width="12" :height="12" class="ml-1" />
 				</button>
 			</div>
 			<div class="flex flex-wrap gap-1.5 py-1">
-				<button @click="addTagToFilters(tag)" v-for="(tag, k) in uniqueTags" :key="k" :title="`Add ${tag.name} to filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
+				<button @click="addTagToFilters?.(tag)" v-for="(tag, k) in uniqueTags" :key="k" :title="`Add ${tag.name} to filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
 			</div>
 		</div>
 
@@ -24,9 +24,9 @@
 		</div>
 		<div v-if="computedNotes.length" class="max-h-96 overflow-auto flex flex-col gap-1.5">
 			<div v-for="(note, k) in computedNotes" :key="k" class="text-sm p-1 leading-snug border border-black dark:border-white">
-				<span class="cursor-pointer" @click="selectNote(note)">{{ note.title }}</span>
+				<span class="cursor-pointer" @click="selectNote?.(note)">{{ note.title }}</span>
 				<div class="flex gap-1 justify-end">
-					<button @click="addTagToFilters(tag)" v-for="(tag, k) in note.tags" :key="k" :title="tag.name" class="w-2 h-2" :style="`background: ${tag.color}`" />
+					<button @click="addTagToFilters?.(tag)" v-for="(tag, k) in note.tags" :key="k" :title="tag.name" class="w-2 h-2" :style="`background: ${tag.color}`" />
 				</div>
 			</div>
 		</div>

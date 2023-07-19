@@ -2,6 +2,7 @@ import { AuthErrorCodes } from 'firebase/auth'
 
 export const appName = 'Gist'
 export const URI_STORAGE_KEY = 'uri-gists'
+export const LOGIN_STATUS_KEY = 'user-is-login'
 export const notifyDuration = 1500
 
 export const authErrorMessages: Record<string, string> = {
