@@ -32,7 +32,7 @@ import { LocationQueryRaw, useRoute, useRouter } from 'vue-router'
 import { nanoid } from 'nanoid'
 import { compress, decompress } from 'lz-string'
 import { URIGist, URIGistList } from '@/models/URI'
-import { URI_STORAGE_KEY, notifyDuration } from '@/config.json'
+import { URI_STORAGE_KEY, notifyDuration } from '@/config'
 import Button from '@/components/Button.vue'
 
 const LIMITS: Record<string, number> = {

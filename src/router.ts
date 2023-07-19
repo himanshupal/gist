@@ -1,7 +1,7 @@
 import { nextTick } from '@vue/runtime-core'
 import { createRouter, createWebHistory, Router, RouterHistory, RouteRecordRaw, isNavigationFailure } from 'vue-router'
 
-import { appName } from '@/config.json'
+import { appName } from '@/config'
 
 import Home from '@/pages/Home.vue'
 import Login from '@/pages/Login.vue'
@@ -52,7 +52,7 @@ const routes: Array<RouteRecordRaw> = [
 		}
 	},
 	{
-		path: '/app',
+		path: '/notes',
 		name: 'Notes',
 		component: Notes,
 		meta: {

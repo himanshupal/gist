@@ -10,7 +10,7 @@ export default defineComponent({
 })
 </script>
 
-<style lang="scss">
+<style lang="css">
 @import 'tailwindcss/tailwind.css';
 @import url('https://fonts.googleapis.com/css2?&family=Special+Elite&family=Spartan&family=Abril+Fatface&display=swap');
 </style>

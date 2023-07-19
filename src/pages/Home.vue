@@ -9,7 +9,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
-import { URI_STORAGE_KEY } from '@/config.json'
+import { URI_STORAGE_KEY } from '@/config'
 import Button from '@/components/Button.vue'
 
 export default defineComponent({

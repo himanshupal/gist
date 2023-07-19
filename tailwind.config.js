@@ -1,6 +1,7 @@
-module.exports = {
-	purge: ['./index.html', './src/**/*.{vue,js,ts}'],
-	darkMode: 'media',
+/** @type {import("tailwindcss").Config} */
+
+const config = {
+	content: ['./index.html', './src/**/*.{vue,js,ts}'],
 	mode: 'jit',
 	theme: {
 		fontFamily: {
@@ -14,3 +15,5 @@ module.exports = {
 		}
 	}
 }
+
+module.exports = config

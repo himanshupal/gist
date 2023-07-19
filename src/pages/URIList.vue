@@ -28,7 +28,7 @@ import { defineComponent, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { compress } from 'lz-string'
 import { URIGist, URIGistList } from '@/models'
-import { URI_STORAGE_KEY, notifyDuration } from '@/config.json'
+import { URI_STORAGE_KEY, notifyDuration } from '@/config'
 import Button from '@/components/Button.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 
