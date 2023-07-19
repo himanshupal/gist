@@ -22,7 +22,7 @@
 			</template>
 			<template v-else>Saved Notes</template>
 		</div>
-		<div v-if="computedNotes.length" class="max-h-96 overflow-auto flex flex-col gap-1.5">
+		<div v-if="computedNotes.length" class="overflow-auto flex flex-col gap-1.5" style="max-height: calc(100vh - 150px)">
 			<div v-for="(note, k) in computedNotes" :key="k" class="text-sm p-1 leading-snug border border-black dark:border-white">
 				<span class="cursor-pointer" @click="selectNote?.(note)">{{ note.title }}</span>
 				<div class="flex gap-1 justify-end">
@@ -38,10 +38,13 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref } from 'vue'
+import { computed, defineComponent, ref as useRef, watch } from 'vue'
 import { GistList, Tag, Tags } from '@/models'
 import { getTextColor, randomTextColor } from '@/helpers'
 import CloseIcon from '@/components/icons/Close.vue'
+import { useUserStore } from '@/store'
+import firebase from '@/config/firebase'
+import { get, ref } from 'firebase/database'
 
 export default defineComponent({
 	name: 'SideNav',
@@ -71,22 +74,20 @@ export default defineComponent({
 	},
 
 	setup(props) {
-		const searchTerm = ref<string>('')
-		const uniqueTags = ref<Tags>([])
+		const searchTerm = useRef<string>('')
+		const uniqueTags = useRef<Tags>([])
 
-		props.notes.forEach((note) => {
-			note.tags?.forEach((tag) => {
-				if (!uniqueTags.value.map((tag) => tag.id).includes(tag.id)) {
-					if (!tag?.color) tag.color = randomTextColor()
-					tag.textColor = getTextColor(tag.color)
-					uniqueTags.value.push(tag)
-					return tag
-				} else {
-					const sampleTag = uniqueTags.value.find((current) => current.id === tag.id)
-					if (!tag?.color) tag.color = sampleTag?.color
-					tag.textColor = sampleTag?.textColor
-				}
-			})
+		const userStore = useUserStore()
+
+		watch(userStore, async (userStore) => {
+			if (userStore.user) {
+				const tags = await get(ref(firebase.database, `/users/${userStore.user.uid}/tags`))
+				uniqueTags.value = Object.entries<Tag>(tags.val()).map<Tag>(([k, v]) => {
+					const color = v.color || randomTextColor()
+					const textColor = getTextColor(color)
+					return { ...v, id: k, color, textColor }
+				})
+			}
 		})
 
 		const computedNotes = computed(() => {

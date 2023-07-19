@@ -1,10 +1,8 @@
 <template>
-	<div class="min-h-screen bg-gray-200 dark:bg-black dark:text-white">
+	<div class="min-h-screen bg-gray-200 dark:bg-black dark:text-white flex flex-col">
 		<Navbar />
 
-		<hr class="border-black dark:border-white" />
-
-		<div class="flex gap-3 px-5 sm:px-10 pt-2.5 pb-5 sm:pb-10">
+		<div class="flex gap-3 px-5 sm:px-10 pt-2.5 pb-5 sm:pb-10 flex-1">
 			<SideNav :notes="notes" :selectNote="selectNote" :filteredTags="filteredTags" :addTagToFilters="addTagToFilters" :removeTagFromFilters="removeTagFromFilters" class="p-1 w-1/2 md:w-1/4" />
 
 			<div class="flex flex-col gap-1.5 flex-grow p-1 w-1/2 md:w-3/4">
@@ -41,16 +39,24 @@
 				</template>
 			</div>
 		</div>
+
+		<div class="fixed bottom-10 right-10 flex gap-4">
+			<button class="bg-gray-100 text-black p-2" @click="toggleNewTagModalOpen">New Tag</button>
+			<button class="bg-gray-100 text-black p-2">New Gist</button>
+		</div>
 	</div>
+
+	<NewTagModal :open="newTagModalOpen" @close="toggleNewTagModalOpen" />
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
-import { Gist, Tag, Tags, User } from '@/models'
 import SecondaryButton from '@/components/SecondaryButton.vue'
-import Navbar from '@/components/Navbar.vue'
-import SideNav from '@/components/SideNav.vue'
+import NewTagModal from '@/components/NewTagModal.vue'
 import CloseIcon from '@/components/icons/Close.vue'
+import { defineComponent, ref as useRef } from 'vue'
+import { Gist, Tag, Tags, User } from '@/models'
+import SideNav from '@/components/SideNav.vue'
+import Navbar from '@/components/Navbar.vue'
 
 import { notes } from '@/temp'
 
@@ -61,13 +67,17 @@ export default defineComponent({
 		SecondaryButton,
 		Navbar,
 		SideNav,
-		CloseIcon
+		CloseIcon,
+
+		NewTagModal
 	},
 
 	setup() {
-		const selectedNote = ref<Gist>()
-		const inviteUser = ref<string>('')
-		const filteredTags = ref<Tags>([])
+		const selectedNote = useRef<Gist>()
+		const inviteUser = useRef<string>('')
+		const filteredTags = useRef<Tags>([])
+
+		const newTagModalOpen = useRef<boolean>(false)
 
 		const addTagToFilters = (tag: Tag) => {
 			if (!filteredTags.value.map((tag) => tag.id).includes(tag.id)) {
@@ -100,11 +110,16 @@ export default defineComponent({
 			console.log({ revoke: user })
 		}
 
+		const toggleNewTagModalOpen = () => {
+			newTagModalOpen.value = !newTagModalOpen.value
+		}
+
 		return {
 			notes,
 			inviteUser,
 			selectedNote,
 			filteredTags,
+			newTagModalOpen,
 
 			edit,
 			remove,
@@ -112,7 +127,8 @@ export default defineComponent({
 			revoke,
 			selectNote,
 			addTagToFilters,
-			removeTagFromFilters
+			removeTagFromFilters,
+			toggleNewTagModalOpen
 		}
 	}
 })

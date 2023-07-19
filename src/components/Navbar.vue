@@ -1,7 +1,10 @@
 <template>
-	<div class="flex items-center justify-between px-5 sm:px-10 py-3 bg-gray-300 dark:bg-black dark:text-white leading-none">
-		<div class="text-3xl font-semibold">{{ user?.displayName }}</div>
-		<button class="flex items-center justify-center bg-white text-black rounded-full p-2" :onclick="logout">Logout</button>
+	<div class="sticky top-0">
+		<div class="flex items-center justify-between px-5 sm:px-10 py-3 bg-gray-300 dark:bg-black dark:text-white leading-none">
+			<div class="text-3xl font-semibold">{{ user?.displayName }}</div>
+			<button class="flex items-center justify-center bg-white text-black rounded-full p-2" :onclick="logout">Logout</button>
+		</div>
+		<hr class="border-black dark:border-white" />
 	</div>
 </template>
 
