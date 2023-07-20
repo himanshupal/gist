@@ -38,13 +38,13 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref as useRef, watch } from 'vue'
-import { GistList, Tag, Tags } from '@/models'
+import { computed, defineComponent, onMounted, onUnmounted, ref as useRef, watch } from 'vue'
+import { ref, onChildAdded, Unsubscribe } from 'firebase/database'
 import { getTextColor, randomTextColor } from '@/helpers'
 import CloseIcon from '@/components/icons/Close.vue'
-import { useUserStore } from '@/store'
+import { GistList, Tag, Tags } from '@/models'
 import firebase from '@/config/firebase'
-import { get, ref } from 'firebase/database'
+import { useUserStore } from '@/store'
 
 export default defineComponent({
 	name: 'SideNav',
@@ -74,20 +74,30 @@ export default defineComponent({
 	},
 
 	setup(props) {
+		const unsubFromChildAdded = useRef<Unsubscribe>()
+		const isInitialChange = useRef<boolean>(true)
 		const searchTerm = useRef<string>('')
 		const uniqueTags = useRef<Tags>([])
 
 		const userStore = useUserStore()
 
-		watch(userStore, async (userStore) => {
-			if (userStore.user) {
-				const tags = await get(ref(firebase.database, `/users/${userStore.user.uid}/tags`))
-				uniqueTags.value = Object.entries<Tag>(tags.val()).map<Tag>(([k, v]) => {
-					const color = v.color || randomTextColor()
+		const fetchAndUpdateTags = () => {
+			if (userStore.user && isInitialChange.value) {
+				isInitialChange.value = false
+				unsubFromChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/tags`), (data) => {
+					const tag: Tag = data.val()
+					const color = tag.color || randomTextColor()
 					const textColor = getTextColor(color)
-					return { ...v, id: k, color, textColor }
+					uniqueTags.value.push({ ...tag, id: data.key as string, color, textColor })
 				})
 			}
+		}
+
+		watch(userStore, fetchAndUpdateTags)
+		onMounted(fetchAndUpdateTags)
+
+		onUnmounted(() => {
+			unsubFromChildAdded.value?.()
 		})
 
 		const computedNotes = computed(() => {
