@@ -6,6 +6,7 @@ interface INewGist {
 	title: Ref<Gist['title']>
 	content: Ref<Gist['content']>
 	tags: Ref<Required<Gist>['tags']>
+	allTags: Ref<Required<Gist>['tags'] | undefined>
 
 	newGistActive: Ref<boolean>
 	newTagModalOpen: Ref<boolean>
@@ -17,6 +18,9 @@ interface INewGist {
 	removeTag(tag: Tag): void
 	skipIfTagPresent(tag: Tag): Tag | undefined
 
+	addToAllTags(tag: Tag): void
+	removeFromAllTags(tag: Tag): void
+
 	toggleNewTagModalOpen(): void
 	toggleNewGist(): void
 }
@@ -25,6 +29,8 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 	const title = ref<string>('')
 	const content = ref<string>('')
 	const tags = ref<Tags>([])
+
+	const allTags = ref<Tags>()
 
 	const newGistActive = ref<boolean>(false)
 	const newTagModalOpen = ref<boolean>(false)
@@ -65,10 +71,21 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		newGistActive.value = !newGistActive.value
 	}
 
+	const addToAllTags = (tag: Tag) => {
+		allTags.value ||= []
+		allTags.value.push(tag)
+	}
+
+	const removeFromAllTags = (tag: Tag) => {
+		allTags.value ||= []
+		allTags.value = allTags.value.filter(({ id }) => id !== tag.id)
+	}
+
 	return {
 		title,
 		content,
 		tags,
+		allTags,
 
 		newGistActive,
 		newTagModalOpen,
@@ -81,6 +98,9 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		clearNewGistData,
 
 		toggleNewTagModalOpen,
-		toggleNewGist
+		toggleNewGist,
+
+		addToAllTags,
+		removeFromAllTags
 	}
 })

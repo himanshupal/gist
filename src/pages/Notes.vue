@@ -36,8 +36,9 @@
 						</div>
 					</div>
 				</template>
+
 				<template v-else-if="newGistActive">
-					<form class="flex flex-col" @submit.prevent="" @reset="clearNewGistData">
+					<form class="flex flex-col" @submit.prevent="saveNewNote" @reset="clearNewGistData">
 						<label for="title" class="text-xl pt-3 pb-1">Title</label>
 						<input name="title" type="text" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black" v-model="newGistTitle" />
 
@@ -52,11 +53,12 @@
 						<textarea name="content" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black h-96" v-model="newGistContent" />
 
 						<div class="flex justify-end gap-6">
-							<Button type="reset" class="mt-6 text-center">Cancel</Button>
-							<Button type="submit" class="mt-6 text-center">Save</Button>
+							<Button type="reset" class="mt-6 text-center">Clear</Button>
+							<Button type="submit" class="mt-6 text-center" :disabled="isSaving">{{ isSaving ? 'Saving...' : 'Save' }}</Button>
 						</div>
 					</form>
 				</template>
+
 				<div v-else class="text-xl pt-3 pb-1 text-center text-red-600 dark:text-yellow-300">Please select a Gist first...</div>
 			</div>
 		</div>
@@ -66,8 +68,10 @@
 </template>
 
 <script lang="ts">
+import { computed, defineComponent, onMounted, onUnmounted, ref as useRef, watch } from 'vue'
+import { set, ref, push, Unsubscribe, onChildAdded } from 'firebase/database'
 import SecondaryButton from '@/components/SecondaryButton.vue'
-import { computed, defineComponent, ref as useRef, watch } from 'vue'
+import { useNewGistStore, useUserStore } from '@/store'
 import NewTagModal from '@/components/NewTagModal.vue'
 import CloseIcon from '@/components/icons/Close.vue'
 import { Gist, Tag, Tags, User } from '@/models'
@@ -75,10 +79,8 @@ import SideNav from '@/components/SideNav.vue'
 import Navbar from '@/components/Navbar.vue'
 import Button from '@/components/Button.vue'
 import { mapActions, mapState } from 'pinia'
-import { useNewGistStore } from '@/store'
+import firebase from '@/config/firebase'
 import Draggable from 'vuedraggable'
-
-import { notes } from '@/temp'
 
 export default defineComponent({
 	name: 'Notes',
@@ -90,7 +92,6 @@ export default defineComponent({
 		Button,
 		SideNav,
 		CloseIcon,
-
 		NewTagModal
 	},
 
@@ -106,7 +107,13 @@ export default defineComponent({
 		const selectedNote = useRef<Gist>()
 		const inviteUser = useRef<string>('')
 		const filteredTags = useRef<Tags>([])
+		const notes = useRef<Gist[]>([])
 
+		const isSaving = useRef<boolean>(false)
+		const isInitialChange = useRef<boolean>(true)
+		const unsubFromChildAdded = useRef<Unsubscribe>()
+
+		const userStore = useUserStore()
 		const newGistStore = useNewGistStore()
 
 		const newGistTitle = computed({
@@ -136,11 +143,45 @@ export default defineComponent({
 			}
 		})
 
+		const fetchAndUpdateNotes = () => {
+			if (userStore.user && newGistStore.allTags && isInitialChange.value) {
+				isInitialChange.value = false
+				unsubFromChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/notes`), (data) => {
+					const note: Omit<Gist, 'tags'> & { tags: string[] } = data.val()
+					notes.value.push({ ...note, id: data.key as string, tags: note.tags.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags })
+				})
+			}
+		}
+
 		watch(newGistStore, ({ newGistActive }) => {
 			if (newGistActive) {
 				selectedNote.value = undefined
 			}
 		})
+
+		watch([userStore, newGistStore], fetchAndUpdateNotes)
+		onMounted(fetchAndUpdateNotes)
+
+		onUnmounted(() => {
+			unsubFromChildAdded.value?.()
+		})
+
+		const saveNewNote = async () => {
+			if (!userStore.user) return
+			try {
+				isSaving.value = true
+				await set(push(ref(firebase.database, `/users/${userStore.user.uid}/notes`)), {
+					title: newGistTitle.value,
+					content: newGistContent.value,
+					tags: newGistTags.value.map(({ id }) => id)
+				})
+				newGistStore.clearNewGistData()
+			} catch (err) {
+				console.error("Couldn't save the data due to", err)
+			} finally {
+				isSaving.value = false
+			}
+		}
 
 		const addTagToFilters = (tag: Tag) => {
 			if (!filteredTags.value.map((tag) => tag.id).includes(tag.id)) {
@@ -184,6 +225,7 @@ export default defineComponent({
 			newGistTitle,
 			newGistContent,
 			newGistTags,
+			isSaving,
 
 			edit,
 			remove,
@@ -191,7 +233,8 @@ export default defineComponent({
 			revoke,
 			selectNote,
 			addTagToFilters,
-			removeTagFromFilters
+			removeTagFromFilters,
+			saveNewNote
 		}
 	}
 })

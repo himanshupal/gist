@@ -3,7 +3,6 @@ export interface Tag {
 	name: string
 	color?: string
 	textColor?: string
-	createdAt: Date
 }
 
 export type Tags = Array<Tag>

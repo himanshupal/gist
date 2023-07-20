@@ -13,7 +13,7 @@
 					</button>
 				</template>
 			</Draggable>
-			<Draggable :list="uniqueTags" itemKey="id" :group="{ name: 'tags', pull: 'clone', put: false }" class="flex flex-wrap gap-1.5 py-1" :clone="skipIfTagPresent">
+			<Draggable :list="allTags" itemKey="id" :group="{ name: 'tags', pull: 'clone', put: false }" class="flex flex-wrap gap-1.5 py-1" :clone="skipIfTagPresent">
 				<template #item="{ element: tag }: { element: Tag }">
 					<button @click="addTagToFilters(tag)" :title="`Add ${tag.name} to filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
 				</template>
@@ -50,7 +50,7 @@ import CloseIcon from '@/components/icons/Close.vue'
 import { GistList, Tag, Tags } from '@/models'
 import firebase from '@/config/firebase'
 import Draggable from 'vuedraggable'
-import { mapActions } from 'pinia'
+import { mapActions, mapState } from 'pinia'
 
 export default defineComponent({
 	name: 'SideNav',
@@ -82,6 +82,10 @@ export default defineComponent({
 		}
 	},
 
+	computed: {
+		...mapState(useNewGistStore, ['allTags'])
+	},
+
 	methods: {
 		...mapActions(useNewGistStore, ['skipIfTagPresent'])
 	},
@@ -92,9 +96,9 @@ export default defineComponent({
 
 		const isInitialChange = useRef<boolean>(true)
 		const searchTerm = useRef<string>('')
-		const uniqueTags = useRef<Tags>([])
 
 		const userStore = useUserStore()
+		const newGistStore = useNewGistStore()
 
 		const fetchAndUpdateTags = () => {
 			if (userStore.user && isInitialChange.value) {
@@ -103,7 +107,7 @@ export default defineComponent({
 					const tag: Tag = data.val()
 					const color = tag.color || randomTextColor()
 					const textColor = getTextColor(color)
-					uniqueTags.value.push({ ...tag, id: data.key as string, color, textColor })
+					newGistStore.addToAllTags({ ...tag, id: data.key as string, color, textColor })
 				})
 			}
 		}
@@ -135,7 +139,6 @@ export default defineComponent({
 		return {
 			filterEl,
 			searchTerm,
-			uniqueTags,
 			computedNotes,
 
 			getTextColor,
