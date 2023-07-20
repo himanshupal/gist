@@ -1,16 +1,14 @@
 import { Tag } from '@/models/Tag'
-import { User } from '@/models/User'
+import { User } from './User'
 
 export interface Gist {
 	id: string
 	title: string
 	content: string
 	tags?: Array<Tag>
-	archived?: Date | boolean
-	deleted?: Date | boolean
-	sharedWith?: Array<User>
+	sharedWith?: Array<string | User>
 	createdAt: Date
-	createdBy: User
+	createdBy: string
 }
 
 export type GistList = Array<Gist>

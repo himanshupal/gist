@@ -7,7 +7,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-type ButtonSize = 'sm' | 'md' | 'lg'
+type ButtonSize = 'sm' | 'md'
 
 export default defineComponent({
 	name: 'SecondaryButton',

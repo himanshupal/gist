@@ -27,36 +27,56 @@
 								<button type="submit" class="p-1 px-2.5">Invite</button>
 							</form>
 							<div v-if="selectedNote.sharedWith?.length" class="flex flex-col gap-1.5">
-								<div v-for="user in selectedNote.sharedWith" :key="user.id" class="flex items-center justify-between font-medium">
-									{{ user.name.length > 24 ? `${user.name.substring(0, 24)}...` : user.name }} <span @click="revoke(user)" class="flex items-center font-light p-1 border border-black dark:border-white cursor-pointer">@{{ user.username }}<CloseIcon :width="14" :height="14" color="white" class="mx-1" /></span>
-								</div>
+								<template v-for="user in selectedNote.sharedWith">
+									<div v-if="typeof user !== 'string'" :key="user.id" class="flex items-center justify-between font-medium">
+										{{ user.name.length > 24 ? `${user.name.substring(0, 24)}...` : user.name }} <span @click="revoke(user)" class="flex items-center font-light p-1 border border-black dark:border-white cursor-pointer">@{{ user.username }}<CloseIcon :width="14" :height="14" color="white" class="mx-1" /></span>
+									</div>
+								</template>
 							</div>
 						</div>
 					</div>
 				</template>
-				<template v-else>
-					<div class="text-xl pt-3 pb-1 text-center text-red-600 dark:text-yellow-300">Please select a Gist first...</div>
-				</template>
-			</div>
-		</div>
+				<template v-else-if="newGistActive">
+					<form class="flex flex-col" @submit.prevent="" @reset="clearNewGistData">
+						<label for="title" class="text-xl pt-3 pb-1">Title</label>
+						<input name="title" type="text" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black" v-model="newGistTitle" />
 
-		<div class="fixed bottom-10 right-10 flex gap-4">
-			<button class="bg-gray-100 text-black p-2" @click="toggleNewTagModalOpen">New Tag</button>
-			<button class="bg-gray-100 text-black p-2">New Gist</button>
+						<label for="tags" class="text-xl pt-3 pb-1">Tags <span class="text-sm">(Drag from the list)</span></label>
+						<Draggable v-model="newGistTags" itemKey="id" group="tags" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black flex gap-1.5" style="height: 38px">
+							<template #item="{ element: tag }: { element: Tag }">
+								<button @click="removeTag(tag)" :title="`Remove ${tag.name} from tags`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }} <CloseIcon :width="12" :height="12" class="ml-0.5" /></button>
+							</template>
+						</Draggable>
+
+						<label for="content" class="text-xl pt-3 pb-1">Content</label>
+						<textarea name="content" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black h-96" v-model="newGistContent" />
+
+						<div class="flex justify-end gap-6">
+							<Button type="reset" class="mt-6 text-center">Cancel</Button>
+							<Button type="submit" class="mt-6 text-center">Save</Button>
+						</div>
+					</form>
+				</template>
+				<div v-else class="text-xl pt-3 pb-1 text-center text-red-600 dark:text-yellow-300">Please select a Gist first...</div>
+			</div>
 		</div>
 	</div>
 
-	<NewTagModal :open="newTagModalOpen" @close="toggleNewTagModalOpen" />
+	<NewTagModal />
 </template>
 
 <script lang="ts">
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import { computed, defineComponent, ref as useRef, watch } from 'vue'
 import NewTagModal from '@/components/NewTagModal.vue'
 import CloseIcon from '@/components/icons/Close.vue'
-import { defineComponent, ref as useRef } from 'vue'
 import { Gist, Tag, Tags, User } from '@/models'
 import SideNav from '@/components/SideNav.vue'
 import Navbar from '@/components/Navbar.vue'
+import Button from '@/components/Button.vue'
+import { mapActions, mapState } from 'pinia'
+import { useNewGistStore } from '@/store'
+import Draggable from 'vuedraggable'
 
 import { notes } from '@/temp'
 
@@ -65,11 +85,21 @@ export default defineComponent({
 
 	components: {
 		SecondaryButton,
+		Draggable,
 		Navbar,
+		Button,
 		SideNav,
 		CloseIcon,
 
 		NewTagModal
+	},
+
+	computed: {
+		...mapState(useNewGistStore, ['newGistActive', 'newTagModalOpen'])
+	},
+
+	methods: {
+		...mapActions(useNewGistStore, ['removeTag', 'clearNewGistData'])
 	},
 
 	setup() {
@@ -77,7 +107,40 @@ export default defineComponent({
 		const inviteUser = useRef<string>('')
 		const filteredTags = useRef<Tags>([])
 
-		const newTagModalOpen = useRef<boolean>(false)
+		const newGistStore = useNewGistStore()
+
+		const newGistTitle = computed({
+			get() {
+				return newGistStore.title
+			},
+			set(v) {
+				newGistStore.updateTitle(v)
+			}
+		})
+
+		const newGistContent = computed({
+			get() {
+				return newGistStore.content
+			},
+			set(v) {
+				newGistStore.updateContent(v)
+			}
+		})
+
+		const newGistTags = computed({
+			get() {
+				return newGistStore.tags
+			},
+			set(v) {
+				newGistStore.updateTags(v)
+			}
+		})
+
+		watch(newGistStore, ({ newGistActive }) => {
+			if (newGistActive) {
+				selectedNote.value = undefined
+			}
+		})
 
 		const addTagToFilters = (tag: Tag) => {
 			if (!filteredTags.value.map((tag) => tag.id).includes(tag.id)) {
@@ -91,7 +154,9 @@ export default defineComponent({
 
 		const selectNote = (note: Gist) => {
 			selectedNote.value = note
-			console.log({ note })
+			if (newGistStore.newGistActive) {
+				newGistStore.toggleNewGist()
+			}
 		}
 
 		const edit = () => {
@@ -110,16 +175,15 @@ export default defineComponent({
 			console.log({ revoke: user })
 		}
 
-		const toggleNewTagModalOpen = () => {
-			newTagModalOpen.value = !newTagModalOpen.value
-		}
-
 		return {
 			notes,
 			inviteUser,
 			selectedNote,
 			filteredTags,
-			newTagModalOpen,
+
+			newGistTitle,
+			newGistContent,
+			newGistTags,
 
 			edit,
 			remove,
@@ -127,8 +191,7 @@ export default defineComponent({
 			revoke,
 			selectNote,
 			addTagToFilters,
-			removeTagFromFilters,
-			toggleNewTagModalOpen
+			removeTagFromFilters
 		}
 	}
 })

@@ -1,6 +1,6 @@
 <template>
-	<dialog class="m-0 p-2 fixed top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" :open="open">
-		<form method="dialog" class="flex gap-2 flex-col" @submit="$emit('close')">
+	<dialog class="m-0 p-2 fixed top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" :open="newTagModalOpen">
+		<form method="dialog" class="flex gap-2 flex-col" @submit="toggleNewTagModalOpen">
 			<div class="flex gap-2 items-center justify-between">
 				<label for="name">Tag Name</label>
 				<input name="name" type="text" v-model.trim="name" maxlength="16" class="w-48 border border-black p-1" />
@@ -20,12 +20,13 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref as useRef } from 'vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import { useNewGistStore, useUserStore } from '@/store'
+import { defineComponent, ref as useRef } from 'vue'
 import { ref, set, push } from 'firebase/database'
+import { mapState, mapActions } from 'pinia'
 import { randomTextColor } from '@/helpers'
 import firebase from '@/config/firebase'
-import { useUserStore } from '@/store'
 
 export default defineComponent({
 	name: 'NewTagModal',
@@ -34,11 +35,12 @@ export default defineComponent({
 		SecondaryButton
 	},
 
-	props: {
-		open: {
-			type: Boolean,
-			required: true
-		}
+	computed: {
+		...mapState(useNewGistStore, ['newTagModalOpen'])
+	},
+
+	methods: {
+		...mapActions(useNewGistStore, ['toggleNewTagModalOpen'])
 	},
 
 	setup(_, ctx) {
@@ -46,6 +48,7 @@ export default defineComponent({
 		const color = useRef<string>(randomTextColor())
 
 		const userStore = useUserStore()
+		const newGistStore = useNewGistStore()
 
 		const createNewTag = async () => {
 			if (!userStore.user) return
@@ -53,7 +56,7 @@ export default defineComponent({
 				name: name.value,
 				color: color.value
 			})
-			ctx.emit('close')
+			newGistStore.toggleNewTagModalOpen()
 		}
 
 		return {

@@ -5,15 +5,19 @@
 
 		<div class="text-xl pt-3 pb-1 font-semibold">Filter by Tags</div>
 		<div class="flex flex-col gap-1.5">
-			<div v-if="filteredTags?.length" class="flex flex-wrap gap-1.5 p-1 border border-black dark:border-white">
-				<button @click="removeTagFromFilters?.(tag)" v-for="(tag, k) in filteredTags" :key="k" :title="`Remove ${tag.name} from filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">
-					{{ tag.name }}
-					<CloseIcon :color="tag.textColor" :width="12" :height="12" class="ml-1" />
-				</button>
-			</div>
-			<div class="flex flex-wrap gap-1.5 py-1">
-				<button @click="addTagToFilters?.(tag)" v-for="(tag, k) in uniqueTags" :key="k" :title="`Add ${tag.name} to filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
-			</div>
+			<Draggable v-if="filteredTags?.length" :list="filteredTags" group="tags" itemKey="id" class="flex flex-wrap gap-1.5 p-1 border border-black dark:border-white" ref="filterEl" @change="removeIfPresentInFilter">
+				<template #item="{ element: tag }: { element: Tag }">
+					<button @click="removeTagFromFilters?.(tag)" :title="`Remove ${tag.name} from filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">
+						{{ tag.name }}
+						<CloseIcon :color="tag.textColor" :width="12" :height="12" class="ml-1" />
+					</button>
+				</template>
+			</Draggable>
+			<Draggable :list="uniqueTags" itemKey="id" :group="{ name: 'tags', pull: 'clone', put: false }" class="flex flex-wrap gap-1.5 py-1" :clone="skipIfTagPresent">
+				<template #item="{ element: tag }: { element: Tag }">
+					<button @click="addTagToFilters(tag)" :title="`Add ${tag.name} to filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
+				</template>
+			</Draggable>
 		</div>
 
 		<div class="text-xl pt-3 pb-1 font-semibold">
@@ -26,7 +30,7 @@
 			<div v-for="(note, k) in computedNotes" :key="k" class="text-sm p-1 leading-snug border border-black dark:border-white">
 				<span class="cursor-pointer" @click="selectNote?.(note)">{{ note.title }}</span>
 				<div class="flex gap-1 justify-end">
-					<button @click="addTagToFilters?.(tag)" v-for="(tag, k) in note.tags" :key="k" :title="tag.name" class="w-2 h-2" :style="`background: ${tag.color}`" />
+					<button @click="addTagToFilters(tag)" v-for="(tag, k) in note.tags" :key="k" :title="tag.name" class="w-2 h-2" :style="`background: ${tag.color}`" />
 				</div>
 			</div>
 		</div>
@@ -41,16 +45,19 @@
 import { computed, defineComponent, onMounted, onUnmounted, ref as useRef, watch } from 'vue'
 import { ref, onChildAdded, Unsubscribe } from 'firebase/database'
 import { getTextColor, randomTextColor } from '@/helpers'
+import { useNewGistStore, useUserStore } from '@/store'
 import CloseIcon from '@/components/icons/Close.vue'
 import { GistList, Tag, Tags } from '@/models'
 import firebase from '@/config/firebase'
-import { useUserStore } from '@/store'
+import Draggable from 'vuedraggable'
+import { mapActions } from 'pinia'
 
 export default defineComponent({
 	name: 'SideNav',
 
 	components: {
-		CloseIcon
+		CloseIcon,
+		Draggable
 	},
 
 	props: {
@@ -63,18 +70,26 @@ export default defineComponent({
 		},
 
 		filteredTags: {
-			type: Array as () => Tags
+			type: Array as () => Tags,
+			required: true
 		},
 		addTagToFilters: {
-			type: Function
+			type: Function,
+			required: true
 		},
 		removeTagFromFilters: {
 			type: Function
 		}
 	},
 
+	methods: {
+		...mapActions(useNewGistStore, ['skipIfTagPresent'])
+	},
+
 	setup(props) {
 		const unsubFromChildAdded = useRef<Unsubscribe>()
+		const filterEl = useRef<(Record<string, any> & HTMLDivElement) | null>(null)
+
 		const isInitialChange = useRef<boolean>(true)
 		const searchTerm = useRef<string>('')
 		const uniqueTags = useRef<Tags>([])
@@ -111,12 +126,20 @@ export default defineComponent({
 			return props.notes
 		})
 
+		const removeIfPresentInFilter = ({ added }: { added: { element: Tag; newIndex: number } }) => {
+			if (props.filteredTags.filter(({ id }) => added.element.id === id).length > 1) {
+				props.filteredTags.splice(added.newIndex, 1)
+			}
+		}
+
 		return {
+			filterEl,
 			searchTerm,
 			uniqueTags,
 			computedNotes,
 
-			getTextColor
+			getTextColor,
+			removeIfPresentInFilter
 		}
 	}
 })
