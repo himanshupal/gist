@@ -43,6 +43,7 @@ export default defineComponent({
 		const router = useRouter()
 
 		const logout = async () => {
+			if (!window.confirm('Are you sure you want to logout?')) return
 			await signOut(firebase.auth)
 			router.push('/login')
 		}

@@ -42,15 +42,13 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, onUnmounted, ref as useRef, watch } from 'vue'
-import { ref, onChildAdded, Unsubscribe } from 'firebase/database'
-import { getTextColor, randomTextColor } from '@/helpers'
-import { useNewGistStore, useUserStore } from '@/store'
+import { computed, defineComponent, ref } from 'vue'
 import CloseIcon from '@/components/icons/Close.vue'
 import { GistList, Tag, Tags } from '@/models'
-import firebase from '@/config/firebase'
-import Draggable from 'vuedraggable'
 import { mapActions, mapState } from 'pinia'
+import { useNewGistStore } from '@/store'
+import { getTextColor } from '@/helpers'
+import Draggable from 'vuedraggable'
 
 export default defineComponent({
 	name: 'SideNav',
@@ -91,33 +89,8 @@ export default defineComponent({
 	},
 
 	setup(props) {
-		const unsubFromChildAdded = useRef<Unsubscribe>()
-		const filterEl = useRef<(Record<string, any> & HTMLDivElement) | null>(null)
-
-		const isInitialChange = useRef<boolean>(true)
-		const searchTerm = useRef<string>('')
-
-		const userStore = useUserStore()
-		const newGistStore = useNewGistStore()
-
-		const fetchAndUpdateTags = () => {
-			if (userStore.user && isInitialChange.value) {
-				isInitialChange.value = false
-				unsubFromChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/tags`), (data) => {
-					const tag: Tag = data.val()
-					const color = tag.color || randomTextColor()
-					const textColor = getTextColor(color)
-					newGistStore.addToAllTags({ ...tag, id: data.key as string, color, textColor })
-				})
-			}
-		}
-
-		watch(userStore, fetchAndUpdateTags)
-		onMounted(fetchAndUpdateTags)
-
-		onUnmounted(() => {
-			unsubFromChildAdded.value?.()
-		})
+		const filterEl = ref<(Record<string, any> & HTMLDivElement) | null>(null)
+		const searchTerm = ref<string>('')
 
 		const computedNotes = computed(() => {
 			if (props.filteredTags?.length) {

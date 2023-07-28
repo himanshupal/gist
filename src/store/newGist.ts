@@ -15,13 +15,15 @@ interface INewGist {
 	updateTitle(value: string): void
 	updateContent(value: string): void
 	updateTags(newTags: Tags): void
-	removeTag(tag: Tag): void
+	removeTag(id: string): void
 	skipIfTagPresent(tag: Tag): Tag | undefined
 
+	updateTag(tag: Tag): void
 	addToAllTags(tag: Tag): void
 	removeFromAllTags(tag: Tag): void
 
 	toggleNewTagModalOpen(): void
+	clearAllCachedTags(): void
 	toggleNewGist(): void
 }
 
@@ -43,8 +45,12 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		content.value = value
 	}
 
-	const removeTag: INewGist['removeTag'] = (tag) => {
-		tags.value = tags.value.filter(({ id }) => id !== tag.id)
+	const removeTag: INewGist['removeTag'] = (id) => {
+		tags.value = tags.value.filter((tag) => tag.id !== id)
+	}
+
+	const updateTag: INewGist['updateTag'] = (tag) => {
+		tags.value = tags.value.map((t) => (t.id === tag.id ? tag : t))
 	}
 
 	const updateTags: INewGist['updateTags'] = (newTags) => {
@@ -61,6 +67,10 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		title.value = ''
 		content.value = ''
 		tags.value = []
+	}
+
+	const clearAllCachedTags = () => {
+		allTags.value = undefined
 	}
 
 	const toggleNewTagModalOpen = () => {
@@ -90,6 +100,7 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		newGistActive,
 		newTagModalOpen,
 
+		updateTag,
 		updateTitle,
 		updateContent,
 		updateTags,
@@ -101,6 +112,7 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		toggleNewGist,
 
 		addToAllTags,
-		removeFromAllTags
+		removeFromAllTags,
+		clearAllCachedTags
 	}
 })

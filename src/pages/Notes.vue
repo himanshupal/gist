@@ -18,7 +18,7 @@
 					<div class="flex flex-row-reverse gap-1.5 justify-between">
 						<div class="flex gap-2 self-start">
 							<SecondaryButton size="sm" @click="edit">Edit</SecondaryButton>
-							<SecondaryButton size="sm" @click="remove">Delete</SecondaryButton>
+							<SecondaryButton size="sm" @click="deleteNote">Delete</SecondaryButton>
 						</div>
 						<div class="w-96 flex flex-col gap-1.5 text-sm">
 							<div class="text-xl font-semibold">Shared with</div>
@@ -45,7 +45,7 @@
 						<label for="tags" class="text-xl pt-3 pb-1">Tags <span class="text-sm">(Drag from the list)</span></label>
 						<Draggable v-model="newGistTags" itemKey="id" group="tags" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black flex gap-1.5" style="height: 38px">
 							<template #item="{ element: tag }: { element: Tag }">
-								<button @click="removeTag(tag)" :title="`Remove ${tag.name} from tags`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }} <CloseIcon :width="12" :height="12" class="ml-0.5" /></button>
+								<button @click="removeTag(tag.id)" :title="`Remove ${tag.name} from tags`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }} <CloseIcon :width="12" :height="12" class="ml-0.5" /></button>
 							</template>
 						</Draggable>
 
@@ -53,8 +53,9 @@
 						<textarea name="content" class="w-full outline-none p-1.5 border border-black dark:border-white bg-white dark:bg-gray-300 dark:text-black h-96" v-model="newGistContent" />
 
 						<div class="flex justify-end gap-6">
+							<Button type="button" class="mt-6 text-center" @click="clearAndToggleNewGist">Cancel</Button>
 							<Button type="reset" class="mt-6 text-center">Clear</Button>
-							<Button type="submit" class="mt-6 text-center" :disabled="isSaving">{{ isSaving ? 'Saving...' : 'Save' }}</Button>
+							<Button type="submit" class="mt-6 text-center" :disabled="isSaving || invalidInput">{{ isSaving ? 'Saving...' : 'Save' }}</Button>
 						</div>
 					</form>
 				</template>
@@ -68,9 +69,10 @@
 </template>
 
 <script lang="ts">
+import { set, ref, push, Unsubscribe, onChildAdded, update, onChildChanged, remove, onChildRemoved } from 'firebase/database'
 import { computed, defineComponent, onMounted, onUnmounted, ref as useRef, watch } from 'vue'
-import { set, ref, push, Unsubscribe, onChildAdded } from 'firebase/database'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import { getTextColor, randomTextColor } from '@/helpers'
 import { useNewGistStore, useUserStore } from '@/store'
 import NewTagModal from '@/components/NewTagModal.vue'
 import CloseIcon from '@/components/icons/Close.vue'
@@ -111,7 +113,16 @@ export default defineComponent({
 
 		const isSaving = useRef<boolean>(false)
 		const isInitialChange = useRef<boolean>(true)
+		const isInitialChangeForTags = useRef<boolean>(true)
+		const isEditing = useRef<string | false>(false)
+
 		const unsubFromChildAdded = useRef<Unsubscribe>()
+		const unsubFromChildUpdated = useRef<Unsubscribe>()
+		const unsubFromChildRemoved = useRef<Unsubscribe>()
+
+		const unsubFromTagsChildAdded = useRef<Unsubscribe>()
+		const unsubFromTagsChildUpdated = useRef<Unsubscribe>()
+		const unsubFromTagsChildRemoved = useRef<Unsubscribe>()
 
 		const userStore = useUserStore()
 		const newGistStore = useNewGistStore()
@@ -143,12 +154,42 @@ export default defineComponent({
 			}
 		})
 
+		const invalidInput = computed(() => !newGistTitle.value || !newGistContent.value)
+
+		const fetchAndUpdateTags = () => {
+			if (userStore.user && isInitialChangeForTags.value) {
+				isInitialChangeForTags.value = false
+				newGistStore.allTags?.length && newGistStore.clearAllCachedTags()
+				unsubFromChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/tags`), (data) => {
+					const tag: Tag = data.val()
+					const color = tag.color || randomTextColor()
+					const textColor = getTextColor(color)
+					newGistStore.addToAllTags({ ...tag, id: data.key as string, color, textColor })
+				})
+				unsubFromTagsChildUpdated.value = onChildChanged(ref(firebase.database, `/users/${userStore.user.uid}/tags`), (data) => {
+					const tag: Tag = data.val()
+					const currentTag = newGistStore.allTags!.find(({ id }) => id === data.key)
+					newGistStore.updateTag({ ...currentTag, ...tag })
+				})
+				unsubFromTagsChildRemoved.value = onChildRemoved(ref(firebase.database, `/users/${userStore.user.uid}/tags`), (data) => {
+					newGistStore.removeTag(data.key as string)
+				})
+			}
+		}
+
 		const fetchAndUpdateNotes = () => {
 			if (userStore.user && newGistStore.allTags && isInitialChange.value) {
 				isInitialChange.value = false
 				unsubFromChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/notes`), (data) => {
-					const note: Omit<Gist, 'tags'> & { tags: string[] } = data.val()
+					const note: Gist<string> = data.val()
 					notes.value.push({ ...note, id: data.key as string, tags: note.tags.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags })
+				})
+				unsubFromChildUpdated.value = onChildChanged(ref(firebase.database, `users/${userStore.user.uid}/notes`), (data) => {
+					const note: Gist<string> = data.val()
+					notes.value = notes.value.map((v) => (v.id === data.key ? { ...v, ...note, tags: note.tags?.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags } : v))
+				})
+				unsubFromChildRemoved.value = onChildRemoved(ref(firebase.database, `users/${userStore.user.uid}/notes`), (data) => {
+					notes.value = notes.value.filter((note) => note.id !== data.key)
 				})
 			}
 		}
@@ -156,29 +197,48 @@ export default defineComponent({
 		watch(newGistStore, ({ newGistActive }) => {
 			if (newGistActive) {
 				selectedNote.value = undefined
+			} else if (isEditing.value) {
+				isEditing.value = false
 			}
 		})
 
 		watch([userStore, newGistStore], fetchAndUpdateNotes)
 		onMounted(fetchAndUpdateNotes)
 
+		watch(userStore, fetchAndUpdateTags)
+		onMounted(fetchAndUpdateTags)
+
 		onUnmounted(() => {
 			unsubFromChildAdded.value?.()
+			unsubFromChildUpdated.value?.()
+			unsubFromChildRemoved.value?.()
+			unsubFromTagsChildAdded.value?.()
+			unsubFromTagsChildUpdated.value?.()
+			unsubFromTagsChildRemoved.value?.()
 		})
 
 		const saveNewNote = async () => {
-			if (!userStore.user) return
+			if (!userStore.user || invalidInput.value) return
 			try {
 				isSaving.value = true
-				await set(push(ref(firebase.database, `/users/${userStore.user.uid}/notes`)), {
-					title: newGistTitle.value,
-					content: newGistContent.value,
-					tags: newGistTags.value.map(({ id }) => id)
-				})
-				newGistStore.clearNewGistData()
+				if (isEditing.value) {
+					await update(ref(firebase.database), {
+						[`/users/${userStore.user.uid}/notes/${isEditing.value}/title`]: newGistTitle.value,
+						[`/users/${userStore.user.uid}/notes/${isEditing.value}/content`]: newGistContent.value,
+						[`/users/${userStore.user.uid}/notes/${isEditing.value}/tags`]: newGistStore.tags.map(({ id }) => id)
+					})
+				} else {
+					await set(push(ref(firebase.database, `/users/${userStore.user.uid}/notes`)), {
+						title: newGistTitle.value,
+						content: newGistContent.value,
+						tags: newGistTags.value.map(({ id }) => id)
+					})
+				}
+				clearAndToggleNewGist()
 			} catch (err) {
 				console.error("Couldn't save the data due to", err)
 			} finally {
+				if (isEditing.value) isEditing.value = false
 				isSaving.value = false
 			}
 		}
@@ -201,11 +261,23 @@ export default defineComponent({
 		}
 
 		const edit = () => {
-			console.log({ edit: selectedNote.value })
+			if (!selectedNote.value) return
+			newGistStore.updateTitle(selectedNote.value.title)
+			newGistStore.updateContent(selectedNote.value.content)
+			newGistStore.updateTags(selectedNote.value.tags || [])
+			isEditing.value = selectedNote.value.id
+			newGistStore.toggleNewGist()
 		}
 
-		const remove = () => {
-			console.log({ remove: selectedNote.value })
+		const deleteNote = async () => {
+			if (!userStore.user || !selectedNote.value) return
+			if (!window.confirm('Are you sure you want to delete this note?')) return
+			try {
+				await remove(ref(firebase.database, `/users/${userStore.user.uid}/notes/${selectedNote.value.id}`))
+				selectedNote.value = undefined
+			} catch (err) {
+				console.error(`Failed deleting the note:`, err)
+			}
 		}
 
 		const invite = () => {
@@ -216,24 +288,31 @@ export default defineComponent({
 			console.log({ revoke: user })
 		}
 
+		const clearAndToggleNewGist = () => {
+			newGistStore.clearNewGistData()
+			newGistStore.toggleNewGist()
+		}
+
 		return {
 			notes,
 			inviteUser,
 			selectedNote,
 			filteredTags,
 
+			invalidInput,
 			newGistTitle,
 			newGistContent,
 			newGistTags,
 			isSaving,
 
 			edit,
-			remove,
 			invite,
 			revoke,
+			deleteNote,
 			selectNote,
 			addTagToFilters,
 			removeTagFromFilters,
+			clearAndToggleNewGist,
 			saveNewNote
 		}
 	}
