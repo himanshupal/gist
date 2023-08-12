@@ -24,7 +24,7 @@
 							<div class="text-xl font-semibold">Shared {{ selectedNote.isShared ? `by ${selectedNote.sharedBy}` : 'with' }}</div>
 							<template v-if="!selectedNote.isShared">
 								<form @submit.prevent="invite" class="flex border border-black dark:border-white">
-									<input type="text" placeholder="Username or Email" v-model="inviteUser" class="p-1 flex-grow outline-none dark:text-black" />
+									<input type="text" placeholder="Username to invite" v-model="inviteUser" class="p-1 flex-grow outline-none dark:text-black" />
 									<button type="submit" class="p-1 px-2.5">Invite</button>
 								</form>
 								<div v-if="selectedNote.sharedWith?.length" class="flex flex-col gap-1.5">
@@ -192,7 +192,7 @@ export default defineComponent({
 						sharedBy: username.val(),
 						tags: (data.tags || []).map((tagId: string) => {
 							const tagData: Tag = tags.val()[tagId]
-							const updatedTag: Tag = { ...tagData, id: tagId, textColor: getTextColor(tagData.color) }
+							const updatedTag: Tag = { ...tagData, id: tagId, textColor: getTextColor(tagData.color), isShared: true }
 							tagSet.add(JSON.stringify(updatedTag))
 							return updatedTag
 						})

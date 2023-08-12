@@ -15,7 +15,7 @@
 			</Draggable>
 			<Draggable :list="allTags" itemKey="id" :group="{ name: 'tags', pull: 'clone', put: false }" class="flex flex-wrap gap-1.5 py-1" :clone="skipIfTagPresent">
 				<template #item="{ element: tag }: { element: Tag }">
-					<button @click="addTagToFilters(tag)" :title="`Add ${tag.name} to filters`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
+					<button @click="addTagToFilters(tag)" @contextmenu.prevent="editTag(tag)" :title="`Add ${tag.name} to filters or right click to edit`" class="flex items-center justify-center leading-none p-1.5 pt-2.5 rounded-sm text-xs" :style="`background: ${tag.color}; color: ${tag.textColor}`">{{ tag.name }}</button>
 				</template>
 			</Draggable>
 		</div>
@@ -42,11 +42,11 @@
 </template>
 
 <script lang="ts">
+import { useNewGistStore, useNewTagStore } from '@/store'
 import { computed, defineComponent, ref } from 'vue'
 import CloseIcon from '@/components/icons/Close.vue'
 import { GistList, Tag, Tags } from '@/models'
 import { mapActions, mapState } from 'pinia'
-import { useNewGistStore } from '@/store'
 import { getTextColor } from '@/helpers'
 import Draggable from 'vuedraggable'
 
@@ -89,6 +89,9 @@ export default defineComponent({
 	},
 
 	setup(props) {
+		const newGistStore = useNewGistStore()
+		const newTagStore = useNewTagStore()
+
 		const filterEl = ref<(Record<string, any> & HTMLDivElement) | null>(null)
 		const searchTerm = ref<string>('')
 
@@ -109,11 +112,20 @@ export default defineComponent({
 			}
 		}
 
+		const editTag = (tag: Tag) => {
+			if (tag.isShared) return alert('This tag is shared by some user and cannot be edited')
+			newTagStore.setTitle(tag.name)
+			newTagStore.setColor(tag.color)
+			newTagStore.setUpdateId(tag.id)
+			newGistStore.toggleNewTagModalOpen()
+		}
+
 		return {
 			filterEl,
 			searchTerm,
 			computedNotes,
 
+			editTag,
 			getTextColor,
 			removeIfPresentInFilter
 		}

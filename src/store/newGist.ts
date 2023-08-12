@@ -1,6 +1,6 @@
 import { Gist, Tag, Tags } from '@/models'
 import { defineStore } from 'pinia'
-import { Ref, ref } from 'vue'
+import { type Ref, ref } from 'vue'
 
 interface INewGist {
 	title: Ref<Gist['title']>
@@ -50,7 +50,7 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 	}
 
 	const updateTag: INewGist['updateTag'] = (tag) => {
-		tags.value = tags.value.map((t) => (t.id === tag.id ? tag : t))
+		allTags.value = allTags.value?.map((t) => (t.id === tag.id ? tag : t))
 	}
 
 	const updateTags: INewGist['updateTags'] = (newTags) => {

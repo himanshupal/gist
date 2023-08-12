@@ -20,12 +20,11 @@
 </template>
 
 <script lang="ts">
+import { useNewGistStore, useUserStore, useNewTagStore } from '@/store'
 import SecondaryButton from '@/components/SecondaryButton.vue'
-import { useNewGistStore, useUserStore } from '@/store'
-import { defineComponent, ref as useRef } from 'vue'
 import { ref, set, push } from 'firebase/database'
+import { computed, defineComponent, watch } from 'vue'
 import { mapState, mapActions } from 'pinia'
-import { randomTextColor } from '@/helpers'
 import firebase from '@/config/firebase'
 
 export default defineComponent({
@@ -44,20 +43,37 @@ export default defineComponent({
 	},
 
 	setup() {
-		const name = useRef<string>('')
-		const color = useRef<string>(randomTextColor())
+		const newTagStore = useNewTagStore()
+
+		const name = computed({
+			get: () => newTagStore.title,
+			set: newTagStore.setTitle
+		})
+
+		const color = computed({
+			get: () => newTagStore.color,
+			set: newTagStore.setColor
+		})
 
 		const userStore = useUserStore()
 		const newGistStore = useNewGistStore()
+
+		watch(newGistStore, (store) => {
+			if (!store.newTagModalOpen) {
+				newTagStore.clearTagData()
+			}
+		})
 
 		const createNewTag = async () => {
 			if (!userStore.user) return
 			try {
 				if (name.value) {
-					await set(push(ref(firebase.database, `/users/${userStore.user.uid}/tags`)), {
-						name: name.value,
-						color: color.value
-					})
+					if (newTagStore.updateId) {
+						await set(ref(firebase.database, `/users/${userStore.user.uid}/tags/${newTagStore.updateId}`), { name: name.value, color: color.value })
+						newTagStore.setUpdateId('')
+					} else {
+						await set(push(ref(firebase.database, `/users/${userStore.user.uid}/tags`)), { name: name.value, color: color.value })
+					}
 				}
 			} catch (err) {
 				console.error('Failed creating tag:', err)

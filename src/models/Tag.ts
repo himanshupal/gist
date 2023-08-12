@@ -3,6 +3,7 @@ export interface Tag {
 	name: string
 	color: string
 	textColor?: string
+	isShared?: true
 }
 
 export type Tags = Array<Tag>
