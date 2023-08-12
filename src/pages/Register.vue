@@ -78,8 +78,8 @@ export default defineComponent({
 
 		const checkUsernameExists = async () => {
 			if (!registrationDetails.username) return
-			const data = await get(ref(firebase.database, '/users/'))
-			if (data.hasChild(registrationDetails.username)) registrationErrors.username = 'Username already taken'
+			const data = await get(ref(firebase.database, `/users/${registrationDetails.username}`))
+			if (data.val()) registrationErrors.username = 'Username already taken'
 			else registrationErrors.username = ''
 		}
 
@@ -120,13 +120,12 @@ export default defineComponent({
 						updateProfile(userCredentials.user, {
 							displayName: registrationDetails.name
 						}),
-						set(ref(firebase.database, '/users/'), {
-							[userCredentials.user.uid]: {
-								username: registrationDetails.username
-							},
-							[registrationDetails.username]: {
-								email: registrationDetails.email
-							}
+						set(ref(firebase.database, `/users/${userCredentials.user.uid}`), {
+							username: registrationDetails.username
+						}),
+						set(ref(firebase.database, `/users/${registrationDetails.username}`), {
+							email: registrationDetails.email,
+							uid: userCredentials.user.uid
 						})
 					])
 					registrationSuccessful.value = true

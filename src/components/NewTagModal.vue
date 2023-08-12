@@ -1,6 +1,6 @@
 <template>
 	<dialog class="m-0 p-2 fixed top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" :open="newTagModalOpen">
-		<form method="dialog" class="flex gap-2 flex-col" @submit="toggleNewTagModalOpen">
+		<form method="dialog" class="flex gap-2 flex-col" @submit="createNewTag">
 			<div class="flex gap-2 items-center justify-between">
 				<label for="name">Tag Name</label>
 				<input name="name" type="text" v-model.trim="name" maxlength="16" class="w-48 border border-black p-1" />
@@ -12,8 +12,8 @@
 			</div>
 
 			<div class="flex gap-2">
-				<SecondaryButton class="flex-1" size="sm" type="button" @click="createNewTag">Save</SecondaryButton>
-				<SecondaryButton class="flex-1" size="sm" type="submit">Cancel</SecondaryButton>
+				<SecondaryButton class="flex-1" size="sm" type="submit">Save</SecondaryButton>
+				<SecondaryButton class="flex-1" size="sm" type="button" @click="toggleNewTagModalOpen">Cancel</SecondaryButton>
 			</div>
 		</form>
 	</dialog>
@@ -43,7 +43,7 @@ export default defineComponent({
 		...mapActions(useNewGistStore, ['toggleNewTagModalOpen'])
 	},
 
-	setup(_, ctx) {
+	setup() {
 		const name = useRef<string>('')
 		const color = useRef<string>(randomTextColor())
 
@@ -52,11 +52,18 @@ export default defineComponent({
 
 		const createNewTag = async () => {
 			if (!userStore.user) return
-			await set(push(ref(firebase.database, `/users/${userStore.user.uid}/tags`)), {
-				name: name.value,
-				color: color.value
-			})
-			newGistStore.toggleNewTagModalOpen()
+			try {
+				if (name.value) {
+					await set(push(ref(firebase.database, `/users/${userStore.user.uid}/tags`)), {
+						name: name.value,
+						color: color.value
+					})
+				}
+			} catch (err) {
+				console.error('Failed creating tag:', err)
+			} finally {
+				newGistStore.toggleNewTagModalOpen()
+			}
 		}
 
 		return {

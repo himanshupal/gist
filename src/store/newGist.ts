@@ -20,7 +20,7 @@ interface INewGist {
 
 	updateTag(tag: Tag): void
 	addToAllTags(tag: Tag): void
-	removeFromAllTags(tag: Tag): void
+	removeFromAllTags(tagId: string): void
 
 	toggleNewTagModalOpen(): void
 	clearAllCachedTags(): void
@@ -86,9 +86,9 @@ export default defineStore<'newGist', INewGist>('newGist', () => {
 		allTags.value.push(tag)
 	}
 
-	const removeFromAllTags = (tag: Tag) => {
+	const removeFromAllTags = (tagId: string) => {
 		allTags.value ||= []
-		allTags.value = allTags.value.filter(({ id }) => id !== tag.id)
+		allTags.value = allTags.value.filter(({ id }) => id !== tagId)
 	}
 
 	return {

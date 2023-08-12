@@ -3,7 +3,7 @@
 		<Navbar />
 
 		<div class="flex gap-3 px-5 sm:px-10 pt-2.5 pb-5 sm:pb-10 flex-1">
-			<SideNav :notes="notes" :selectNote="selectNote" :filteredTags="filteredTags" :addTagToFilters="addTagToFilters" :removeTagFromFilters="removeTagFromFilters" class="p-1 w-1/2 md:w-1/4" />
+			<SideNav :notes="[...notes, ...sharedNotes]" :selectNote="selectNote" :filteredTags="filteredTags" :addTagToFilters="addTagToFilters" :removeTagFromFilters="removeTagFromFilters" class="p-1 w-1/2 md:w-1/4" />
 
 			<div class="flex flex-col gap-1.5 flex-grow p-1 w-1/2 md:w-3/4">
 				<template v-if="selectedNote">
@@ -16,23 +16,23 @@
 					<hr class="border-black dark:border-white" />
 
 					<div class="flex flex-row-reverse gap-1.5 justify-between">
-						<div class="flex gap-2 self-start">
+						<div v-if="!selectedNote.isShared" class="flex gap-2 self-start">
 							<SecondaryButton size="sm" @click="edit">Edit</SecondaryButton>
 							<SecondaryButton size="sm" @click="deleteNote">Delete</SecondaryButton>
 						</div>
-						<div class="w-96 flex flex-col gap-1.5 text-sm">
-							<div class="text-xl font-semibold">Shared with</div>
-							<form @submit.prevent="invite" class="flex border border-black dark:border-white">
-								<input type="text" placeholder="Username or Email" v-model="inviteUser" class="p-1 flex-grow outline-none dark:text-black" />
-								<button type="submit" class="p-1 px-2.5">Invite</button>
-							</form>
-							<div v-if="selectedNote.sharedWith?.length" class="flex flex-col gap-1.5">
-								<template v-for="user in selectedNote.sharedWith">
-									<div v-if="typeof user !== 'string'" :key="user.id" class="flex items-center justify-between font-medium">
-										{{ user.name.length > 24 ? `${user.name.substring(0, 24)}...` : user.name }} <span @click="revoke(user)" class="flex items-center font-light p-1 border border-black dark:border-white cursor-pointer">@{{ user.username }}<CloseIcon :width="14" :height="14" color="white" class="mx-1" /></span>
+						<div class="w-96 flex flex-col gap-1.5 text-sm" :class="selectedNote.isShared && 'w-full'">
+							<div class="text-xl font-semibold">Shared {{ selectedNote.isShared ? `by ${selectedNote.sharedBy}` : 'with' }}</div>
+							<template v-if="!selectedNote.isShared">
+								<form @submit.prevent="invite" class="flex border border-black dark:border-white">
+									<input type="text" placeholder="Username or Email" v-model="inviteUser" class="p-1 flex-grow outline-none dark:text-black" />
+									<button type="submit" class="p-1 px-2.5">Invite</button>
+								</form>
+								<div v-if="selectedNote.sharedWith?.length" class="flex flex-col gap-1.5">
+									<div v-for="username in selectedNote.sharedWith" class="flex items-center flex-wrap font-medium gap-1.5">
+										<span class="flex items-center font-light p-1 border border-black dark:border-white cursor-pointer">{{ username }}<CloseIcon @click="revoke(username)" :width="14" :height="14" color="white" class="ml-1" /></span>
 									</div>
-								</template>
-							</div>
+								</div>
+							</template>
 						</div>
 					</div>
 				</template>
@@ -69,18 +69,18 @@
 </template>
 
 <script lang="ts">
-import { set, ref, push, Unsubscribe, onChildAdded, update, onChildChanged, remove, onChildRemoved } from 'firebase/database'
+import { set, ref, push, Unsubscribe, onChildAdded, update, onChildChanged, remove, onChildRemoved, get } from 'firebase/database'
 import { computed, defineComponent, onMounted, onUnmounted, ref as useRef, watch } from 'vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import { getTextColor, randomTextColor } from '@/helpers'
 import { useNewGistStore, useUserStore } from '@/store'
 import NewTagModal from '@/components/NewTagModal.vue'
 import CloseIcon from '@/components/icons/Close.vue'
-import { Gist, Tag, Tags, User } from '@/models'
 import SideNav from '@/components/SideNav.vue'
 import Navbar from '@/components/Navbar.vue'
 import Button from '@/components/Button.vue'
 import { mapActions, mapState } from 'pinia'
+import { Gist, Tag, Tags } from '@/models'
 import firebase from '@/config/firebase'
 import Draggable from 'vuedraggable'
 
@@ -109,7 +109,9 @@ export default defineComponent({
 		const selectedNote = useRef<Gist>()
 		const inviteUser = useRef<string>('')
 		const filteredTags = useRef<Tags>([])
+
 		const notes = useRef<Gist[]>([])
+		const sharedNotes = useRef<Gist[]>([])
 
 		const isSaving = useRef<boolean>(false)
 		const isInitialChange = useRef<boolean>(true)
@@ -124,34 +126,26 @@ export default defineComponent({
 		const unsubFromTagsChildUpdated = useRef<Unsubscribe>()
 		const unsubFromTagsChildRemoved = useRef<Unsubscribe>()
 
+		const unsubFromSharedChildAdded = useRef<Unsubscribe>()
+		const unsubFromSharedChildUpdated = useRef<Unsubscribe>()
+		const unsubFromSharedChildRemoved = useRef<Unsubscribe>()
+
 		const userStore = useUserStore()
 		const newGistStore = useNewGistStore()
 
 		const newGistTitle = computed({
-			get() {
-				return newGistStore.title
-			},
-			set(v) {
-				newGistStore.updateTitle(v)
-			}
+			get: () => newGistStore.title,
+			set: newGistStore.updateTitle
 		})
 
 		const newGistContent = computed({
-			get() {
-				return newGistStore.content
-			},
-			set(v) {
-				newGistStore.updateContent(v)
-			}
+			get: () => newGistStore.content,
+			set: newGistStore.updateContent
 		})
 
 		const newGistTags = computed({
-			get() {
-				return newGistStore.tags
-			},
-			set(v) {
-				newGistStore.updateTags(v)
-			}
+			get: () => newGistStore.tags,
+			set: newGistStore.updateTags
 		})
 
 		const invalidInput = computed(() => !newGistTitle.value || !newGistContent.value)
@@ -177,18 +171,64 @@ export default defineComponent({
 			}
 		}
 
+		const getSharedFromUser = async (userId: string, notes: Array<string>) => {
+			const [username, tags, ...fetchedNotes] = await Promise.all([get(ref(firebase.database, `/users/${userId}/username`)), get(ref(firebase.database, `/users/${userId}/tags`)), ...notes.map((id) => get(ref(firebase.database, `/users/${userId}/notes/${id}`)))])
+			const tagSet = new Set<string>()
+			sharedNotes.value = sharedNotes.value.filter(({ sharedBy, tags }) => {
+				if (sharedBy === username.val()) {
+					tags.forEach(({ id }) => newGistStore.removeFromAllTags(id))
+					return false
+				}
+				return true
+			})
+			sharedNotes.value.push(
+				...fetchedNotes.map<Gist>((v) => {
+					const data = v.val()
+					delete data.sharedWith
+					return {
+						...data,
+						isShared: true,
+						id: v.key as string,
+						sharedBy: username.val(),
+						tags: (data.tags || []).map((tagId: string) => {
+							const tagData: Tag = tags.val()[tagId]
+							const updatedTag: Tag = { ...tagData, id: tagId, textColor: getTextColor(tagData.color) }
+							tagSet.add(JSON.stringify(updatedTag))
+							return updatedTag
+						})
+					}
+				})
+			)
+			tagSet.forEach((tag) => newGistStore.addToAllTags(JSON.parse(tag)))
+		}
+
 		const fetchAndUpdateNotes = () => {
 			if (userStore.user && newGistStore.allTags && isInitialChange.value) {
 				isInitialChange.value = false
+				unsubFromSharedChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/shared`), (data) => {
+					getSharedFromUser(data.key as string, Object.keys(data.val()))
+				})
+				unsubFromSharedChildUpdated.value = onChildChanged(ref(firebase.database, `/users/${userStore.user.uid}/shared`), (data) => {
+					getSharedFromUser(data.key as string, Object.keys(data.val()))
+				})
+				unsubFromSharedChildRemoved.value = onChildRemoved(ref(firebase.database, `/users/${userStore.user.uid}/shared`), (data) => {
+					data.forEach((v) => {
+						sharedNotes.value = sharedNotes.value.filter((n) => {
+							if (n.id !== v.key) return true
+							if (selectedNote.value?.id === n.id) selectedNote.value = undefined
+							return false
+						})
+					})
+				})
 				unsubFromChildAdded.value = onChildAdded(ref(firebase.database, `/users/${userStore.user.uid}/notes`), (data) => {
-					const note: Gist<string> = data.val()
-					notes.value.push({ ...note, id: data.key as string, tags: note.tags.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags })
+					const note: Gist<string> & { sharedWith: Record<string, string> } = data.val()
+					notes.value.push({ ...note, id: data.key as string, tags: note.tags.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags, sharedWith: note.sharedWith && Object.keys(note.sharedWith) })
 				})
-				unsubFromChildUpdated.value = onChildChanged(ref(firebase.database, `users/${userStore.user.uid}/notes`), (data) => {
+				unsubFromChildUpdated.value = onChildChanged(ref(firebase.database, `/users/${userStore.user.uid}/notes`), (data) => {
 					const note: Gist<string> = data.val()
-					notes.value = notes.value.map((v) => (v.id === data.key ? { ...v, ...note, tags: note.tags?.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags } : v))
+					notes.value = notes.value.map((v) => (v.id === data.key ? { ...v, ...note, tags: note.tags?.map((id) => newGistStore.allTags!.find((f) => f.id === id)).filter(Boolean) as Tags, sharedWith: note.sharedWith && Object.keys(note.sharedWith) } : v))
 				})
-				unsubFromChildRemoved.value = onChildRemoved(ref(firebase.database, `users/${userStore.user.uid}/notes`), (data) => {
+				unsubFromChildRemoved.value = onChildRemoved(ref(firebase.database, `/users/${userStore.user.uid}/notes`), (data) => {
 					notes.value = notes.value.filter((note) => note.id !== data.key)
 				})
 			}
@@ -215,6 +255,9 @@ export default defineComponent({
 			unsubFromTagsChildAdded.value?.()
 			unsubFromTagsChildUpdated.value?.()
 			unsubFromTagsChildRemoved.value?.()
+			unsubFromSharedChildAdded.value?.()
+			unsubFromSharedChildUpdated.value?.()
+			unsubFromSharedChildRemoved.value?.()
 		})
 
 		const saveNewNote = async () => {
@@ -280,12 +323,31 @@ export default defineComponent({
 			}
 		}
 
-		const invite = () => {
-			console.log({ invite: inviteUser.value })
+		const invite = async () => {
+			if (!inviteUser.value || !userStore.user || !selectedNote.value) return
+			try {
+				const data = await get(ref(firebase.database, `/users/${inviteUser.value}`))
+				const userInfo = data.val()
+				if (!userInfo) return alert('User does not exist')
+				await Promise.all([set(ref(firebase.database, `/users/${userInfo.uid}/shared/${userStore.user.uid}/${selectedNote.value.id}`), true), set(ref(firebase.database, `/users/${userStore.user.uid}/notes/${selectedNote.value.id}/sharedWith/${inviteUser.value}`), true)])
+				selectedNote.value.sharedWith = [...(selectedNote.value.sharedWith || []), inviteUser.value]
+				inviteUser.value = ''
+			} catch (err) {
+				console.error('Invite failed:', err)
+			}
 		}
 
-		const revoke = (user: User) => {
-			console.log({ revoke: user })
+		const revoke = async (username: string) => {
+			if (!userStore.user || !selectedNote.value) return
+			try {
+				const data = await get(ref(firebase.database, `/users/${username}`))
+				const userInfo = data.val()
+				if (!userInfo) return
+				await Promise.all([remove(ref(firebase.database, `/users/${userInfo.uid}/shared/${userStore.user.uid}/${selectedNote.value.id}`)), remove(ref(firebase.database, `/users/${userStore.user.uid}/notes/${selectedNote.value.id}/sharedWith/${username}`))])
+				selectedNote.value.sharedWith = selectedNote.value.sharedWith?.filter((u) => u !== username)
+			} catch (err) {
+				console.error('Share revoking failed:', err)
+			}
 		}
 
 		const clearAndToggleNewGist = () => {
@@ -295,6 +357,7 @@ export default defineComponent({
 
 		return {
 			notes,
+			sharedNotes,
 			inviteUser,
 			selectedNote,
 			filteredTags,
